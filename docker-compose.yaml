@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres
+    expose:
+      - "5435"
+    ports:
+      - "5435:5435"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "change-password"
+      POSTGRES_DB: "db"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+  api:
+    command: bash -c "poetry install && poetry run python manage.py makemigrations && poetry run python manage.py migrate && poetry run python manage.py runserver 0.0.0.0:8087"
+    build:
+      context: backend
+    expose:
+      - "8087"
+    ports:
+      - "8087:8087"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env.backend
+    depends_on:
+      db:
+        condition: service_healthy
